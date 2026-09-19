@@ -1,0 +1,3 @@
+# Preserve upstream file bytes for provenance hash verification.
+models/basic-pitch/LICENSE -text
+*.onnx -text

@@ -1,6 +1,7 @@
 """Exercise repeated GUI starts against a DD DLL that permits initialization only once."""
 
 import time
+from pathlib import Path
 import unittest
 from unittest.mock import Mock, patch
 
@@ -31,6 +32,9 @@ class ReplayTests(unittest.TestCase):
         self.dll.DD_key.return_value = 1
         self.dll_patch = patch("main.ctypes.WinDLL", return_value=self.dll)
         self.dll_patch.start()
+        self.path_patch = patch.object(DDInputBackend, "candidate_path", return_value=Path("mock-dd.dll"))
+        self.path_patch.start()
+        self.addCleanup(self.path_patch.stop)
         self.sleep_patch = patch("main.time.sleep")
         self.sleep_patch.start()
         self.factory = Mock(side_effect=lambda mode: DDInputBackend())

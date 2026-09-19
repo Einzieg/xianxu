@@ -165,6 +165,7 @@ class InputAdapterTests(unittest.TestCase):
         dll = Mock()
         dll.DD_btn.side_effect = [0, 1]
         backend = DDInputBackend()
+        backend.candidate_path = Mock(return_value=Path("mock-dd.dll"))
         with patch("main.ctypes.WinDLL", return_value=dll), patch("main.time.sleep") as sleep:
             backend.ensure_ready()
         self.assertEqual(dll.DD_btn.call_count, 2)
