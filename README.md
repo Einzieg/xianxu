@@ -13,6 +13,7 @@
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat-square)
 [![License](https://img.shields.io/badge/Original_code-MIT-8B5CF6?style=flat-square)](LICENSE)
+[![Checks](https://github.com/Einzieg/xianxu/actions/workflows/ci.yml/badge.svg)](https://github.com/Einzieg/xianxu/actions/workflows/ci.yml)
 
 [快速开始](#快速开始) · [使用指南](docs/guide.md) · [安装包构建](docs/packaging.md) · [问题反馈](https://github.com/Einzieg/xianxu/issues)
 
@@ -57,7 +58,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed' }
 
 ### 独立安装包
 
-见 [构建说明](docs/packaging.md)。安装包内置 Python 引擎、模型及依赖，终端用户不需要 Python/Node/Rust，系统仍需 WebView2。
+**[下载 Windows 安装包（Releases）](https://github.com/Einzieg/xianxu/releases)**，或参阅 [构建说明](docs/packaging.md)。安装包内置 Python 引擎、模型及依赖，终端用户不需要 Python/Node/Rust，系统仍需 WebView2。
+
+首个公开版本为含 DD 的预览版，已通过构建、独立引擎及合成音频转谱测试；尚未完成干净 Windows 虚拟机安装验收。安装、升级前请保存曲谱并正常退出旧播放器。
 
 普通版不包含 DD。含 DD 版本可在软件安装阶段自动调用厂商驱动安装器，需要管理员授权；失败会提示，不关闭驱动签名检查，不在每次应用启动时重复安装，不在卸载软件时擅自移除共享驱动。
 
