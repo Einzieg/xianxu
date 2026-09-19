@@ -1,0 +1,43 @@
+name: Windows checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Python tests (no input devices)
+        run: |
+          $ErrorActionPreference = 'Stop'
+          uv sync --locked
+          if ($LASTEXITCODE -ne 0) { throw 'uv sync failed' }
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          & ./.venv/Scripts/python.exe -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { throw 'Python tests failed' }
+      - name: Frontend checks
+        working-directory: desktop
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:npm_config_script_shell = (Get-Process -Id $PID).Path
+          npm ci
+          if ($LASTEXITCODE -ne 0) { throw 'npm ci failed' }
+          npm run test
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend tests failed' }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw 'Frontend build failed' }
+      - name: Rust check
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo check --locked --manifest-path desktop/src-tauri/Cargo.toml
+          if ($LASTEXITCODE -ne 0) { throw 'Rust check failed' }

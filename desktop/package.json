@@ -1,0 +1,28 @@
+{
+  "name": "xianxu-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "$ErrorActionPreference='Stop'; node node_modules/vite/bin/vite.js",
+    "typecheck": "$ErrorActionPreference='Stop'; node node_modules/typescript/bin/tsc -b; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
+    "build": "$ErrorActionPreference='Stop'; node node_modules/typescript/bin/tsc -b; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node node_modules/vite/bin/vite.js build; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
+    "test": "$ErrorActionPreference='Stop'; node --experimental-strip-types --test src/lib/model.test.ts; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
+    "preview": "$ErrorActionPreference='Stop'; node node_modules/vite/bin/vite.js preview"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
+    "@tauri-apps/plugin-dialog": "^2.4.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.6"
+  }
+}

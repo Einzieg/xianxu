@@ -1,0 +1,55 @@
+{
+  "project": "Spotify Basic Pitch",
+  "repository": "https://github.com/spotify/basic-pitch",
+  "commit": "fa5997af0a8210982619003269994a1be25eddf3",
+  "license": "Apache-2.0",
+  "copyright": "Copyright 2022 Spotify AB",
+  "transcription_revision": "legato-v2.1",
+  "chord_transcription_revision": "chords-v1",
+  "files": [
+    {
+      "path": "nmp.onnx",
+      "bytes": 230444,
+      "sha256": "2c3c1d144bfa61ad236e92e169c13535c880469a12a047d4e73451f2c059a0ec",
+      "url": "https://raw.githubusercontent.com/spotify/basic-pitch/fa5997af0a8210982619003269994a1be25eddf3/basic_pitch/saved_models/icassp_2022/nmp.onnx"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "929c910bae2152fa87199a5d0660e09263419b7eee6d4b301d05ee2aaf211c37",
+      "url": "https://raw.githubusercontent.com/spotify/basic-pitch/fa5997af0a8210982619003269994a1be25eddf3/LICENSE"
+    }
+  ],
+  "adapted_sources": [
+    "https://github.com/spotify/basic-pitch/blob/fa5997af0a8210982619003269994a1be25eddf3/basic_pitch/constants.py",
+    "https://github.com/spotify/basic-pitch/blob/fa5997af0a8210982619003269994a1be25eddf3/basic_pitch/inference.py",
+    "https://github.com/spotify/basic-pitch/blob/fa5997af0a8210982619003269994a1be25eddf3/basic_pitch/note_creation.py"
+  ],
+  "inference": {
+    "sample_rate": 22050,
+    "input": "serving_default_input_2:0",
+    "input_shape": [1, 43844, 1],
+    "note": "StatefulPartitionedCall:1",
+    "onset": "StatefulPartitionedCall:2",
+    "contour": "StatefulPartitionedCall:0",
+    "output_frames": 172,
+    "overlap_frames": 30,
+    "prepend_samples": 3840,
+    "window_hop_samples": 36164,
+    "trim_each_side_frames": 15,
+    "timing": "Official model_frames_to_time including MAGIC_ALIGNMENT_OFFSET=0.0018; not plain frame*256/22050."
+  },
+  "modifications": [
+    "numpy/scipy/soundfile instead of librosa and TensorFlow; scipy polyphase resampling differs from librosa's resampler.",
+    "CPU ONNX only; no online model downloads at runtime; pinned model SHA256 verified on load.",
+    "Onset-first note decoder derived from Spotify; no Melodia residual-energy or frame-only note creation.",
+    "Boundary/plateau onset support, five-frame release tolerance, exact same-pitch reattack split.",
+    "legato-v2 ports the user-auditioned isolated E prototype: validate original onset peak indices with +/-75-cent pitch-local envelope valley/rise evidence; never edit the probability map or merge different pitches.",
+    "Register centers remain fixed from confidence-filtered RAW candidates, before acoustic onset validation, as in the accepted E prototype.",
+    "Event-level DP integrates neural frame evidence weighted by acoustic tail decay; transitions subtract the truncated tail integral instead of excluding overlaps. Entry-only states protect held leads from unrelated ornaments.",
+    "Bounded memory: 40-second Hilbert cores with 2-second guards, one pitch at a time; retain only float32 frame envelopes and packed local float64 integrals. DP predecessor scoring is vectorized with linear workspace, not a notes-by-song or notes-by-notes allocation.",
+    "Original event-level dynamic programming with rests, confidence gates and soft adaptive register prior. No extra repeat-merging beyond accepted E; quiet real rearticulations and long reverb remain limitations.",
+    "legato-v2.1 restores a validated same-pitch continuation only where onset decoding split the preceding selected note exactly, positive prefix evidence spans the gap, and the next selected onset caps its duration. Existing selected notes are unchanged; no arbitrary rest filling or new onset creation.",
+    "Opt-in chords-v1 keeps every legato-v2.1 lead note and adds nonduplicate acoustically validated support candidates with mean-frame >= 0.65, onset >= 0.65 and support >= 0.8. No inferred harmony or scale notes are added. Default legato-v2.1 is unchanged.",
+    "Basic Pitch is instrument-agnostic, best on one instrument at a time; it does not identify/separate a particular instrument."
+  ]
+}
