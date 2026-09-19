@@ -233,8 +233,23 @@ h1 { font-size: 31px; letter-spacing: 1px; line-height: 1.45; font-weight: 550; 
 .player-timeline progress { width: 100%; flex: 1; }
 .player-message { color: #718b85; font-size: 8px; margin-top: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .player-options { display: flex; align-items: flex-end; flex-direction: column; gap: 14px; }
-.mode-select { display: flex; align-items: center; color: #b8cabe; gap: 5px; }
-.mode-select select { background: transparent; border: 0; padding: 2px 0 2px 3px; font-size: 11px; }
+.mode-select { display: flex; align-items: center; color: #b8cabe; gap: 8px; }
+.mode-select select {
+  color-scheme: dark;
+  background-color: #202c2b;
+  color: #e7f2ed;
+  border: 1px solid #52675d;
+  border-radius: 8px;
+  min-height: 34px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+/* Explicit option colors prevent WebView2's native popup from using a white surface. */
+.mode-select option { background-color: #202c2b; color: #e7f2ed; }
+.mode-select option:checked { background-color: #36594a; color: #e5fff2; }
+.mode-select select:hover:not(:disabled) { border-color: #9ce4ce; background-color: #293b35; }
+.mode-select select:focus-visible { outline-offset: 2px; }
+.mode-select:has(select:disabled) { opacity: .55; }
 .preview-switch { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 10px; color: #95aca3; position: relative; }
 .preview-switch input { position: absolute; opacity: 0; width: 30px; height: 20px; margin: 0; }
 .preview-switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 3px; }
