@@ -89,6 +89,21 @@ if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed' }
 
 </details>
 
+## 走向优先重编（离线工具）
+
+`music_contour.py` 可对保存的曲库快照重新编配：优先保留旋律的上行、下行、高音峰值与同音重复，再重建稀疏低音。原谱、曲名、顺序和设置保留；已是九键成品或尚未确认旋律的多声部谱会保留原版，并在报告中注明。
+
+```powershell
+$ErrorActionPreference = 'Stop'
+# 先保存并正常关闭播放器；将完整 library.json 备份到本地 artifacts 目录。
+.\.venv\Scripts\python.exe music_contour.py artifacts/library.before.json artifacts/contour-candidate
+if ($LASTEXITCODE -ne 0) { throw 'Contour rebuild failed' }
+```
+
+输出目录必须不存在。工具只生成候选 `library.json` 与 `report.json`，验证多种速度和按键时长下的事件配对，**不覆盖活库、不启动驱动、不发送按键**。试听确认后再备份并替换播放器数据。九键压缩仍有损，长音阶可能出现平台，不能恢复原谱里已经丢失的高音。
+
+此功能目前是源码中的离线工具，**未改变播放器默认导入算法，也未包含在现有安装包中**。个人曲库与试听文件不随代码发布。
+
 ## 数据与隐私
 
 - 谱库及设置位于 `%APPDATA%/com.rockmusic.workspace-player/`，更新不随意清空曲库。
