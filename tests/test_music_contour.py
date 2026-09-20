@@ -1,10 +1,14 @@
 from copy import deepcopy
 from dataclasses import replace
 import unittest
+import threading
+import tempfile
 
 from music_contour import contour_errors, fit_contour, rebuild_library
 from music_library import CALIBRATED_MAPPING, encode_score
 from music_score import Note, Score
+from music_adapt import adapt_score
+from music_library import ScoreLibrary
 
 
 def pairs(source, old):
@@ -13,6 +17,39 @@ def pairs(source, old):
 
 
 class ContourTests(unittest.TestCase):
+    def test_player_import_uses_contour_without_mutating_original(self):
+        source = Score("Peak", tuple(Note(i * .2, .15, p) for i, p in
+                       enumerate([73, 82, 77, 77, 75, 73, 70])), 2, ((0, "Lead"),))
+        with tempfile.TemporaryDirectory() as directory:
+            library = ScoreLibrary(directory)
+            item = library.arrange(source, "synthetic.mid", texture="chords")
+        self.assertEqual(item["original"], encode_score(source))
+        notes = item["score"]["notes"]
+        self.assertGreater(notes[1][2], notes[0][2])
+        self.assertGreater(notes[1][2], notes[2][2])
+        self.assertEqual(notes[2][2], notes[3][2])
+
+    def test_sparse_backing_uses_the_refined_lead(self):
+        lead = tuple(Note(i*.3, .2, p) for i, p in enumerate([73, 82, 77, 77, 75, 73, 70]))
+        source = Score("Lead and bass", lead + (Note(0, 1, 45, 1), Note(1.5, 1, 45, 1)),
+                       3, ((0, "Lead"), (1, "Bass")))
+        solo = adapt_score(source, CALIBRATED_MAPPING, track=0, contour=True)
+        full = adapt_score(source, CALIBRATED_MAPPING, melody_track=0, texture="melody_bass", contour=True,
+                           sparse_config={"version": 1, "backing_track": 1, "tempo_map": [[0, 0, 500000]]})
+        self.assertEqual(tuple(n for n in full.score.notes if n.track == 0), solo.score.notes)
+
+    def test_polyphonic_chords_unchanged(self):
+        source = Score("Chord", (Note(0, 1, 72), Note(0, 1, 76), Note(0, 1, 79)), 1, ((0, "Piano"),))
+        self.assertEqual(adapt_score(source, CALIBRATED_MAPPING, texture="chords", contour=True),
+                         adapt_score(source, CALIBRATED_MAPPING, texture="chords"))
+
+    def test_cancel_refinement(self):
+        stop = threading.Event()
+        stop.set()
+        from music_score import ScoreError
+        with self.assertRaises(ScoreError):
+            fit_contour(pairs([73, 82], [60, 57]), CALIBRATED_MAPPING, -13, stop)
+
     def test_peak_and_repeated_descent(self):
         original = pairs([73, 82, 77, 77, 75, 73, 70], [60, 57, 64, 64, 62, 60, 57])
         fitted = fit_contour(original, CALIBRATED_MAPPING, -13)

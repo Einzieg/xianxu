@@ -194,9 +194,9 @@ def _adapt_chords(score, mapping, faithful, track, stop):
                       tuple((n, a) for (n, _), a in zip(pairs, adapted)), "chords")
 
 
-def _adapt_melody_chords(score, mapping, policy, melody_track, stop):
+def _adapt_melody_chords(score, mapping, policy, melody_track, stop, contour=False):
     # Freeze the solo result first: accompaniment never votes on its key or pitch.
-    lead = adapt_score(score, mapping, policy, track=melody_track, stop=stop)
+    lead = adapt_score(score, mapping, policy, track=melody_track, stop=stop, contour=contour)
     locked = lead.score.notes
     starts = [n.start for n in locked]
     reserved = {pitch: [n for n in locked if n.pitch == pitch] for pitch in mapping}
@@ -248,7 +248,7 @@ def _adapt_melody_chords(score, mapping, policy, melody_track, stop):
 
 
 def adapt_score(score, mapping, policy=POLICIES[0], track=None, stop=None, *, texture="melody", melody_track=None,
-                sparse_config=None):
+                sparse_config=None, contour=False):
     mapping = validate_mapping(mapping)
     if policy not in POLICIES:
         raise ScoreError("未知适配策略")
@@ -265,7 +265,7 @@ def adapt_score(score, mapping, policy=POLICIES[0], track=None, stop=None, *, te
     if texture == "melody_bass":
         from music_sparse import sparse_backing
         lead = adapt_score(score, mapping, policy, track=melody_track if melody_track is not None else track,
-                           stop=stop)
+                           stop=stop, contour=contour)
         pairs = list(lead.pairs) + sparse_backing(score, lead, mapping, sparse_config, stop)
         pairs.sort(key=lambda pair: (pair[1].start, pair[1].pitch, pair[1].track))
         folded = sum(a.pitch != n.pitch + lead.shift and (a.pitch - n.pitch - lead.shift) % 12 == 0
@@ -275,9 +275,14 @@ def adapt_score(score, mapping, policy=POLICIES[0], track=None, stop=None, *, te
         return Adaptation(score, result, lead.shift, folded, lead.approximated, len(score.notes) - len(pairs),
                           lead.track_name, lead.selected_track, tuple(pairs), texture)
     if texture == "melody_chords":
-        return _adapt_melody_chords(score, mapping, policy, melody_track if melody_track is not None else track, stop)
+        return _adapt_melody_chords(score, mapping, policy, melody_track if melody_track is not None else track, stop, contour)
     if texture == "chords":
-        return _adapt_chords(score, mapping, faithful, track, stop)
+        result = _adapt_chords(score, mapping, faithful, track, stop)
+        ordered = sorted((a for a, _ in result.pairs), key=lambda n: n.start)
+        if contour and not any(a.start + a.duration > b.start + .03 for a, b in zip(ordered, ordered[1:])):
+            from music_contour import refine_adaptation
+            result = refine_adaptation(result, mapping, stop)
+        return result
     notes, track_name, selected_track = _melody(score, track, 0.14 if simple else 0.08)
     targets = np.array(sorted(mapping))
     if all(note.pitch in mapping for note in notes):
@@ -308,5 +313,9 @@ def adapt_score(score, mapping, policy=POLICIES[0], track=None, stop=None, *, te
     folded = sum(pitch != note.pitch + shift and (pitch - note.pitch - shift) % 12 == 0 for note, pitch in zip(notes, fitted))
     approximated = sum((pitch - note.pitch - shift) % 12 != 0 for note, pitch in zip(notes, fitted))
     result = Score(score.title + " · 乐器适配", adapted, score.duration, ((0, "适配旋律"),))
-    return Adaptation(score, result, shift, folded, approximated, len(score.notes) - len(adapted),
-                      track_name, selected_track, tuple(zip(notes, adapted)))
+    adaptation = Adaptation(score, result, shift, folded, approximated, len(score.notes) - len(adapted),
+                            track_name, selected_track, tuple(zip(notes, adapted)))
+    if contour:
+        from music_contour import refine_adaptation
+        adaptation = refine_adaptation(adaptation, mapping, stop)
+    return adaptation

@@ -11,7 +11,7 @@ import numpy as np
 
 from music_adapt import adapt_score
 from music_library import decode_score, encode_score, mapping_from_settings
-from music_score import compile_score, validate_mapping
+from music_score import ScoreError, compile_score, validate_mapping
 from music_sparse import sparse_backing
 
 
@@ -25,7 +25,7 @@ def contour_errors(pairs):
     return {"reversals": int(reversals), "plateaus": int(plateaus)}
 
 
-def fit_contour(pairs, mapping, shift):
+def fit_contour(pairs, mapping, shift, stop=None):
     """Repair an existing lead adaptation without changing its attacks or lengths.
 
     Prefer few edits, forbid reversed motion within phrases, and penalize lost
@@ -47,6 +47,8 @@ def fit_contour(pairs, mapping, shift):
     history = np.zeros((len(pairs), len(targets)), dtype=int)
     cost = local[0]
     for i in range(1, len(pairs)):
+        if stop is not None and i % 128 == 1 and stop.is_set():
+            raise ScoreError("Contour adaptation cancelled")
         delta = int(source[i] - source[i - 1])
         gap = pairs[i][0].start - (pairs[i - 1][0].start + pairs[i - 1][0].duration)
         transition = np.abs(motion - delta) * .08
@@ -68,6 +70,17 @@ def fit_contour(pairs, mapping, shift):
         result.append((original, replace(fitted, pitch=int(targets[cursor]))))
         cursor = history[i, cursor]
     return tuple(reversed(result))
+
+
+def refine_adaptation(lead, mapping, stop=None):
+    """Opt-in refinement of a selected monophonic lead, not voice selection."""
+    if all(a.pitch in mapping for a, _ in lead.pairs) or not any(contour_errors(lead.pairs).values()):
+        return lead
+    pairs = fit_contour(lead.pairs, mapping, lead.shift, stop)
+    return replace(lead, pairs=pairs, score=replace(lead.score, notes=tuple(b for _, b in pairs)),
+                   folded=sum(b.pitch != a.pitch + lead.shift and (b.pitch-a.pitch-lead.shift) % 12 == 0
+                              for a, b in pairs),
+                   approximated=sum((b.pitch-a.pitch-lead.shift) % 12 != 0 for a, b in pairs))
 
 
 def validate_events(score, mapping):

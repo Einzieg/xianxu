@@ -101,11 +101,11 @@ class ScoreLibrary:
     def arrange(self, source, source_path, stop=None, *, texture="melody", melody_track=None, sparse_config=None):
         mapping = mapping_from_settings(self.settings)
         adapted = adapt_score(source, mapping, stop=stop, texture=texture, melody_track=melody_track,
-                              sparse_config=sparse_config)
+                              sparse_config=sparse_config, contour=True)
         return {"id": uuid.uuid4().hex, "title": source.title, "duration": adapted.score.duration,
                 "note_count": len(adapted.score.notes), "original_count": len(source.notes),
                 "source": str(source_path), "created_at": datetime.now(timezone.utc).isoformat(),
-                "summary": adapted.summary, "mapping": self.settings["mapping"], "texture": texture,
+                "summary": adapted.summary + " · 单旋律走向优先，多声部保留原策略", "mapping": self.settings["mapping"], "texture": texture,
                 "original": encode_score(source), "score": encode_score(adapted.score),
                 **({"melody_track": adapted.selected_track} if texture in ("melody_chords", "melody_bass") else {}),
                 **({"sparse_config": deepcopy(sparse_config)} if texture == "melody_bass" else {})}
