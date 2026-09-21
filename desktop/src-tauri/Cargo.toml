@@ -1,6 +1,6 @@
 [package]
 name = "rock-music-player"
-version = "0.1.3"
+version = "0.1.4"
 description = "Tauri host for the workspace Python music engine"
 edition = "2021"
 rust-version = "1.77.2"

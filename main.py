@@ -7,6 +7,7 @@ from ctypes import wintypes
 
 import customtkinter as ctk
 from pynput import keyboard
+from dd_init_guard import suppress_start_menu
 
 try:
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -359,6 +360,15 @@ class DDInputBackend:
                 f"未找到 DD 驱动 DLL，请将 DLL 放到程序目录、DD 子目录，或设置环境变量 {DD_DRIVER_ENV}"
             )
 
+        try:
+            with suppress_start_menu():
+                self._initialize(driver_path)
+        except Exception:
+            self.dll = None
+            raise
+        return None
+
+    def _initialize(self, driver_path):
         try:
             self.dll = ctypes.WinDLL(str(driver_path))
             self.dd_btn = self.dll.DD_btn

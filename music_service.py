@@ -21,6 +21,7 @@ from music_score import ScoreError, compile_score, load_midi, parse_text
 
 
 ROOT = Path(__file__).resolve().parent
+TRACK_GAP_SECONDS = 3.0
 
 
 def make_backend(mode):
@@ -336,6 +337,9 @@ class MusicService:
             target_guard, delay = self.target.state, 0 if continuing else settings["delay"]
             if activate_target and not self.abort_queue.is_set():
                 self._focus_target()
+        if continuing:
+            # Reuse the interruptible countdown, not a sleep under the service lock.
+            delay = TRACK_GAP_SECONDS
         # F10 can arrive while DD initializes or between tracks. Keep its latch
         # in the per-event guard; ScorePlayer.start clears only its own stop flag.
         def guard():

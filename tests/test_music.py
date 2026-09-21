@@ -166,8 +166,11 @@ class InputAdapterTests(unittest.TestCase):
         dll.DD_btn.side_effect = [0, 1]
         backend = DDInputBackend()
         backend.candidate_path = Mock(return_value=Path("mock-dd.dll"))
-        with patch("main.ctypes.WinDLL", return_value=dll), patch("main.time.sleep") as sleep:
+        with patch("main.ctypes.WinDLL", return_value=dll), patch("main.time.sleep") as sleep, \
+                patch("main.suppress_start_menu") as guard:
             backend.ensure_ready()
+        guard.return_value.__enter__.assert_called_once()
+        guard.return_value.__exit__.assert_called_once()
         self.assertEqual(dll.DD_btn.call_count, 2)
         sleep.assert_called_once_with(2.0)
         dll.DD_key.assert_not_called()

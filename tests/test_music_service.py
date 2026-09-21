@@ -66,8 +66,8 @@ class ServiceTests(unittest.TestCase):
         score = Score(title, (Note(0, 0.025, 60),), 0.035)
         return self.service.library.add(self.service.library.arrange(score, "fixture"))["id"]
 
-    def finish(self):
-        self.service.player._thread.join(2)
+    def finish(self, timeout=2):
+        self.service.player._thread.join(timeout)
         self.assertFalse(self.service.player.running)
 
     def wait_state(self, state):
@@ -246,10 +246,47 @@ class ServiceTests(unittest.TestCase):
         self.finish()
         self.service._tick()
         self.assertEqual(self.service.library.current_id, self.b)
-        self.finish()
+        self.assertEqual(self.service.player.snapshot().state, "countdown")
+        self.finish(timeout=5)
         self.service._tick()
         self.assertFalse(self.service.queue_active)
         self.factory.assert_not_called()
+
+    def test_all_automatic_modes_use_three_second_gap(self):
+        for mode in ("order", "random", "repeat_all", "repeat_one"):
+            with self.subTest(mode=mode):
+                self.service.handle("stop")
+                self.service.handle("set_mode", {"mode": mode})
+                self.service.handle("play", {"id": self.a})
+                self.finish()
+                before = self.backend.press_keyboard_action.call_count
+                with patch.object(self.service.player, "start", wraps=self.service.player.start) as start:
+                    self.service._tick()
+                    self.assertEqual(start.call_args.args[3], 3.0)
+                self.assertEqual(self.service.player.snapshot().state, "countdown")
+                self.assertEqual(self.backend.press_keyboard_action.call_count, before)
+                self.service.handle("stop")
+                self.service._tick()
+                self.assertFalse(self.service.player.running)
+                self.assertFalse(self.service.queue_active)
+
+    def test_gap_can_pause_resume_and_manual_next_skips_gap(self):
+        self.service.handle("play")
+        self.finish()
+        self.service._tick()
+        self.service.handle("pause", {"paused": True})
+        self.wait_state("paused")
+        before = self.backend.press_keyboard_action.call_count
+        self.service.handle("resume")
+        self.wait_state("countdown")
+        self.assertEqual(self.backend.press_keyboard_action.call_count, before)
+        self.service.handle("set_mode", {"mode": "repeat_all"})
+        with patch.object(self.service.player, "start", wraps=self.service.player.start) as start:
+            self.service.handle("next")
+            self.assertEqual(start.call_args.args[3], 0)
+        self.finish()
+        self.assertEqual(self.service.library.current_id, self.a)
+        self.assertEqual(self.backend.press_keyboard_action.call_count, before + 1)
 
     def test_stop_during_repeat_never_restarts(self):
         self.service.handle("set_mode", {"mode": "repeat_one"})
